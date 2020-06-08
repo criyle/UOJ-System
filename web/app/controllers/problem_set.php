@@ -76,7 +76,7 @@ EOD;
 	}
 	
 	if ($cond) {
-		$cond = join($cond, ' and ');
+		$cond = join(' and ', $cond);
 	} else {
 		$cond = '1';
 	}
@@ -166,8 +166,8 @@ $('#input-show_submit_mode').click(function() {
 });
 </script>
 <?php
-	echo '<div class="', join($div_classes, ' '), '">';
-	echo '<table class="', join($table_classes, ' '), '">';
+	echo '<div class="', join(' ', $div_classes), '">';
+	echo '<table class="', join(' ', $table_classes), '">';
 	echo '<thead>';
 	echo $header;
 	echo '</thead>';
