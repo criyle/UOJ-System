@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/criyle/UOJ-System/judger2/pb";
+
+service Compile {
+  // Compile compiles source code into executables
+  rpc Compile(CompileRequest) returns (CompileResult);
+};
+
+message CompileRequest {
+  bytes source = 1;
+  string language = 2;
+};
+
+message CompileResult {
+  map<string, bytes> exec = 1;
+  repeated string args = 2;
+  repeated string env = 3;
+  uint64 procLimit = 4;
+  bytes compileMessage = 5;
+};
