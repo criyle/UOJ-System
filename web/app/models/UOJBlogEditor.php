@@ -192,7 +192,7 @@ class UOJBlogEditor {
 				echo $this->post_data['content'];
 				echo '</article>';
 				echoUOJPageFooter(array('ShowPageFooter' => false));
-			} else if ($this->type == 'slide') {
+			} elseif ($this->type == 'slide') {
 				uojIncludeView('slide', array_merge(
 					UOJContext::pageConfig(),
 					array(
