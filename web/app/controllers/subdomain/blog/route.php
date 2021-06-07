@@ -47,5 +47,4 @@ call_user_func(function() { // to prevent variable scope leak
 			Route::any("$prefix/post/{id}/delete", '/subdomain/blog/blog_delete.php');
 		}
 	);
-
 });
