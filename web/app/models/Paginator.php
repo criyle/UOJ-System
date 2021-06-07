@@ -22,7 +22,7 @@ class Paginator {
 			
 			$this->n_pages = max((int)ceil($this->n_rows / $this->page_len), 1);
 
-			$this->cur_page = validateUInt($_GET['page']) ? (int)$_GET['page'] : 1;
+			$this->cur_page = validateUInt($_GET['page'] ?? null) ? (int)$_GET['page'] : 1;
 			if ($this->cur_page < 1) {
 				$this->cur_page = 1;
 			} else if ($this->cur_page > $this->n_pages) {

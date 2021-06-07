@@ -1,0 +1,26 @@
+{
+  "name": "uoj-system-rendering-service",
+  "version": "1.0.0",
+  "description": "Markdown rendering server-sider rendering service",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/criyle/UOJ-System.git"
+  },
+  "author": "criyle",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/criyle/UOJ-System/issues"
+  },
+  "homepage": "https://github.com/criyle/UOJ-System#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "marked": "^2.0.1"
+  }
+}

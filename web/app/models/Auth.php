@@ -7,7 +7,7 @@ class Auth {
 	}
 	public static function id() {
 		global $myUser;
-		return $myUser['username'];
+		return $myUser !== null ? $myUser['username'] : null;
 	}
 	public static function user() {
 		global $myUser;
@@ -60,7 +60,7 @@ class Auth {
 				return;
 			}
 			$myUser = queryUser($username);
-			if ($myUser['remember_token'] !== $remember_token) {
+			if ($myUser !== null && $myUser['remember_token'] !== $remember_token) {
 				$myUser = null;
 			}
 			return;
@@ -76,7 +76,7 @@ class Auth {
 			}
 		}
 		if ($myUser) {
-			DB::update("update user_info set remote_addr = '".DB::escape($_SERVER['REMOTE_ADDR'])."', http_x_forwarded_for = '".DB::escape($_SERVER['HTTP_X_FORWARDED_FOR'])."' where username = '".DB::escape($myUser['username'])."'");
+			DB::update("update user_info set remote_addr = '".DB::escape($_SERVER['REMOTE_ADDR'])."', http_x_forwarded_for = '".DB::escape($_SERVER['HTTP_X_FORWARDED_FOR'] ?? "")."' where username = '".DB::escape($myUser['username'])."'");
 			$_SESSION['last_visited'] = time();
 		}
 	}

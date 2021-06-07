@@ -1,0 +1,47 @@
+FROM php:apache
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# install required packages
+RUN apt-get update \
+	&& apt-get install -y \
+	build-essential \
+	libglib2.0-dev \
+	zip \
+	unzip \
+	libzip-dev \ 
+	libapache2-mod-xsendfile \
+	libyaml-dev \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& pecl install yaml \
+	&& a2enmod rewrite headers \
+	&& docker-php-ext-configure zip \
+	&& docker-php-ext-install mysqli \
+	&& docker-php-ext-enable yaml 
+
+# Copy site config
+COPY config/000-uoj.conf /etc/apache2/sites-available/000-uoj.conf
+
+# Run initialization steps
+RUN a2ensite 000-uoj.conf \
+	&& a2dissite 000-default.conf \
+	&& sed -i -e '172s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
+	&& mkdir -p --mode 733 /var/lib/php/uoj_sessions \
+	&& chmod +t /var/lib/php/uoj_sessions \
+	&& mkdir -p /var/www/uoj/app/storage \
+	&& chown -R www-data:www-data /var/www/uoj/app/storage \
+	&& mkdir -p /var/uoj_data/upload \
+	&& chown -R www-data:www-data /var/uoj_data \
+	&& mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" 
+
+# Install local main judger
+COPY judger /opt/uoj/judger
+
+RUN cd /opt/uoj/judger/uoj_judger \
+	&& make runner
+
+# Install web
+COPY web/ /var/www/uoj 
+
+# Copy uoj config
+COPY config/conf.php /var/www/uoj/app/.config.php

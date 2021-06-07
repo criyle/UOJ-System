@@ -94,17 +94,26 @@ class UOJBlogEditor {
 		$purifier = HTML::pruifier();
 		
 		$this->post_data['title'] = HTML::escape($this->post_data['title']);
+
+		$url = 'http://'.UOJConfig::$data['render_server']['host'].':'.UOJConfig::$data['render_server']['port'].'/';
 		
 		if ($this->type == 'blog') {
 			$content_md = $_POST[$this->name . '_content_md'];
-			try {
-				$v8 = new V8Js('POST');
-				$v8->content_md = $this->post_data['content_md'];
-				$v8->executeString(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/js/marked.js'), 'marked.js');
-				$this->post_data['content'] = $v8->executeString('marked(POST.content_md)');
-			} catch (V8JsException $e) {
-				die(json_encode(array('content_md' => '未知错误')));
+			
+			$option = array(
+				'http' => array(
+					'header' => array('Content-Type: text/plain',
+						'Context-Length: ' . strlen($this->post_data['content_md'])),
+					'method' => 'POST',
+					'content' => $this->post_data['content_md']
+				)
+			);
+			$context = stream_context_create($option);
+			$result = @file_get_contents($url, false, $context);
+			if ($result === false) {
+				die(json_encode(array('content_md' => 'failed to request markdown rendering service')));
 			}
+			$this->post_data['content'] = $result;
 
 			if (preg_match('/^.*<!--.*readmore.*-->.*$/m', $this->post_data['content'], $matches, PREG_OFFSET_CAPTURE)) {
 				$content_less = substr($this->post_data['content'], 0, $matches[0][1]);
@@ -114,49 +123,26 @@ class UOJBlogEditor {
 				$this->post_data['content'] = $purifier->purify($this->post_data['content']);
 			}
 		} else if ($this->type == 'slide') {
-			$content_array = yaml_parse($this->post_data['content_md']);
+			$content_array = @yaml_parse($this->post_data['content_md']);
 			if ($content_array === false || !is_array($content_array)) {
 				die(json_encode(array('content_md' => '不合法的 YAML 格式')));
 			}
-			
-			try {
-				$v8 = new V8Js('PHP');
-				$v8->executeString(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/js/marked.js'), 'marked.js');
-				$v8->executeString(<<<EOD
-marked.setOptions({
-	getLangClass: function(lang) {
-		lang = lang.toLowerCase();
-		switch (lang) {
-			case 'c': return 'c';
-			case 'c++': return 'cpp';
-			case 'pascal': return 'pascal';
-			default: return lang;
-		}
-	},
-	getElementClass: function(tok) {
-		switch (tok.type) {
-			case 'list_item_start':
-				return 'fragment';
-			case 'loose_item_start':
-				return 'fragment';
-			default:
-				return null;
-		}
-	}
-})
-EOD
+
+			$marked = function($md) use($url, $purifier) {
+				$option = array(
+					'http' => array(
+						'header' => array('Content-Type: text/plain',
+							'Context-Length: ' . strlen($this->post_data['content_md'])),
+						'method' => 'POST',
+						'content' => $md
+					)
 				);
-			} catch (V8JsException $e) {
-				die(json_encode(array('content_md' => '未知错误')));
-			}
-			
-			$marked = function($md) use($v8, $purifier) {
-				try {
-					$v8->md = $md;
-					return $purifier->purify($v8->executeString('marked(PHP.md)'));
-				} catch (V8JsException $e) {
-					die(json_encode(array('content_md' => '未知错误')));
+				$context = stream_context_create($option);
+				$result = @file_get_contents($url, false, $context);
+				if ($result === false) {
+					die(json_encode(array('content_md' => 'failed to request markdown rendering service')));
 				}
+				return $purifier->purify($result);
 			};
 			
 			$config = array();

@@ -66,7 +66,7 @@
 			insertSlide(array_merge($data, array('is_draft' => $data['is_hidden'] ? 1 : 0)));
 			$blog = array('id' => DB::insert_id(), 'tags' => array());
 		}
-		if ($data['tags'] !== $blog['tags']) {
+		if (($data['tags']??null) !== ($blog['tags']??null)) {
 			DB::delete("delete from blogs_tags where blog_id = {$blog['id']}");
 			foreach ($data['tags'] as $tag) {
 				DB::insert("insert into blogs_tags (blog_id, tag) values ({$blog['id']}, '".DB::escape($tag)."')");

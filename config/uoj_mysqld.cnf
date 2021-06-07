@@ -1,0 +1,9 @@
+[mysqld]
+default-time-zone='+8:00'
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+init_connect='SET NAMES utf8mb4'
+init_connect='SET collation_connection = utf8mb4_unicode_ci'
+skip-character-set-client-handshake
+sql-mode=ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+default_authentication_plugin=mysql_native_password

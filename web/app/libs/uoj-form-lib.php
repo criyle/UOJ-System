@@ -245,7 +245,7 @@ EOD;
 			
 			$this->addVInput("{$name}_title", 'text', '标题', $editor->cur_data['title'],
 				function ($title) use($editor) {
-					return $editor->validateTitle();
+					return $editor->validate('title');
 				},
 				null
 			);
@@ -254,7 +254,7 @@ EOD;
 			
 			$this->add("{$name}_content_md", $content_md_html,
 				function ($content_md) use($editor) {
-					return $editor->validateContentMd();
+					return $editor->validate('content_md');
 				},
 				'always_ok'
 			);

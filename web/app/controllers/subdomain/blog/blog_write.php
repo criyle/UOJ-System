@@ -69,7 +69,7 @@
 				$ret['blog_url'] = HTML::blog_url(UOJContext::user()['username'], "/post/{$blog['id']}");
 			}
 		}
-		if ($data['tags'] !== $blog['tags']) {
+		if (($data['tags']??null) !== ($blog['tags']??null)) {
 			DB::delete("delete from blogs_tags where blog_id = {$blog['id']}");
 			foreach ($data['tags'] as $tag) {
 				DB::insert("insert into blogs_tags (blog_id, tag) values ({$blog['id']}, '".DB::escape($tag)."')");
