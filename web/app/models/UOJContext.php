@@ -1,6 +1,23 @@
 <?php
 
 class UOJContext {
+	public static $meta_default = [
+		'active_duration_M' => 36,
+		'markdown' => [
+			'backend' => 'aux',
+			'aux_url' => 'http://uoj-web-aux:7513',
+			'timeout' => 30
+		],
+		'submission_frequency' => [
+			'interval' => 'PT1S',
+			'limit' => 1,
+		],
+		'update_judgement_status_delay' => [
+			'base' => 500,
+			'adder' => 500
+		],
+	];
+
 	public static $data = array();
 	
 	public static function pageConfig() {
@@ -116,6 +133,15 @@ class UOJContext {
 						return $blog['poster'] == self::$data['user']['username'] && $blog['type'] == 'S' && $blog['is_draft'] == false;
 				}
 				break;
+		}
+	}
+
+	public static function getMeta($name) {
+		$value = DB::selectFirst("select value from meta where name='$name'");
+		if ($value === null) {
+			return self::$meta_default[$name];
+		} else {
+			return json_decode($value['value'], true);
 		}
 	}
 }

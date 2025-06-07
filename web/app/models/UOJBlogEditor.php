@@ -1,14 +1,18 @@
 <?php
 
 class UOJBlogEditor {
+
+	/**
+	 * @var string blog, slide, or quiz
+	 */
 	public $type = 'blog';
 	public $name;
 	public $blog_url;
 	public $save;
-	public $cur_data = array();
-	public $post_data = array();
+	public $cur_data = [];
+	public $post_data = [];
 	
-	public $label_text = array(
+	public $label_text = [
 		'title' => '标题',
 		'tags' => '标签（多个标签用逗号隔开）',
 		'content' => '内容',
@@ -16,15 +20,14 @@ class UOJBlogEditor {
 		'blog visibility' => '博客可见性',
 		'private' => '未公开',
 		'public' => '公开'
-	);
+	];
 	
-	public $validator = array();
+	public $validator = [];
 	
 	function __construct() {
-		global $REQUIRE_LIB;
-		$REQUIRE_LIB['blog-editor'] = '';
+		requireLib('blog-editor');
 		
-		$this->validator = array(
+		$this->validator = [
 			'title' => function(&$title) {
 				if ($title == '') {
 					return '标题不能为空';
@@ -65,7 +68,7 @@ class UOJBlogEditor {
 				}
 				return '';
 			}
-		);
+		];
 	}
 	
 	public function validate($name) {
@@ -91,20 +94,17 @@ class UOJBlogEditor {
 		
 		$this->post_data['is_hidden'] = isset($_POST["{$this->name}_is_hidden"]) ? 1 : 0;
 		
-		$purifier = HTML::pruifier();
+		$purifier = HTML::purifier();
 		
 		$this->post_data['title'] = HTML::escape($this->post_data['title']);
 		
 		if ($this->type == 'blog') {
 			$content_md = $_POST[$this->name . '_content_md'];
-			try {
-				$v8 = new V8Js('POST');
-				$v8->content_md = $this->post_data['content_md'];
-				$v8->executeString(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/js/marked.js'), 'marked.js');
-				$this->post_data['content'] = $v8->executeString('marked(POST.content_md)');
-			} catch (V8JsException $e) {
+			$content = UOJMarkdown::compile_from_markdown($content_md, ['type' => 'uoj']);
+			if ($content === false) {
 				die(json_encode(array('content_md' => '未知错误')));
 			}
+			$this->post_data['content'] = $content;
 
 			if (preg_match('/^.*<!--.*readmore.*-->.*$/m', $this->post_data['content'], $matches, PREG_OFFSET_CAPTURE)) {
 				$content_less = substr($this->post_data['content'], 0, $matches[0][1]);
@@ -119,51 +119,19 @@ class UOJBlogEditor {
 				die(json_encode(array('content_md' => '不合法的 YAML 格式')));
 			}
 			
-			try {
-				$v8 = new V8Js('PHP');
-				$v8->executeString(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/js/marked.js'), 'marked.js');
-				$v8->executeString(<<<EOD
-marked.setOptions({
-	getLangClass: function(lang) {
-		lang = lang.toLowerCase();
-		switch (lang) {
-			case 'c': return 'c';
-			case 'c++': return 'cpp';
-			case 'pascal': return 'pascal';
-			default: return lang;
-		}
-	},
-	getElementClass: function(tok) {
-		switch (tok.type) {
-			case 'list_item_start':
-				return 'fragment';
-			case 'loose_item_start':
-				return 'fragment';
-			default:
-				return null;
-		}
-	}
-})
-EOD
-				);
-			} catch (V8JsException $e) {
-				die(json_encode(array('content_md' => '未知错误')));
-			}
-			
-			$marked = function($md) use ($v8, $purifier) {
-				try {
-					$v8->md = $md;
-					return $purifier->purify($v8->executeString('marked(PHP.md)'));
-				} catch (V8JsException $e) {
+			$marked = function($md) use($purifier) {
+				$html = UOJMarkdown::compile_from_markdown($md, ['type' => 'slide']);
+				if ($html === false) {
 					die(json_encode(array('content_md' => '未知错误')));
 				}
+				return $purifier->purify($html);
 			};
 			
 			$config = array();
 			$this->post_data['content'] = '';
 			foreach ($content_array as $slide_name => $slide_content) {
-				if (is_array($slide_content) && is_array($slide_content['config'])) {
-					foreach (array('theme') as $config_key) {
+				if (is_array($slide_content) && isset($slide_content['config']) && is_array($slide_content['config'])) {
+					foreach (['theme'] as $config_key) {
 						if (is_string($slide_content['config'][$config_key]) && strlen($slide_content['config'][$config_key]) <= 30) {
 							$config[$config_key] = $slide_content['config'][$config_key];
 						}
@@ -187,6 +155,52 @@ EOD
 				$this->post_data['content'] .= "</section>\n";
 			}
 			$this->post_data['content'] = json_encode($config) . "\n" . $this->post_data['content'];
+		} elseif ($this->type == 'quiz') {
+			$content_md = $_POST[$this->name . '_content_md'];
+			$content = UOJMarkdown::compile_from_markdown($content_md, ['type' => 'uoj']);
+			if ($content === false) {
+				die(json_encode(['content_md' => [
+					['type' => 'html', 'html' => '未知错误']
+				]], JSON_UNESCAPED_UNICODE));
+			}
+
+			$content = $purifier->purify($content);
+
+			$delimiter = '/(<h1>\{[a-zA-Z_]+\}<\/h1>|<p>[a-zA-Z_]+\..*<\/p>)/';
+
+			$res = preg_split($delimiter, $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+			$final = [];
+			$curi = -1;
+			$curj = -1;
+
+			foreach ($res as $sp) {
+				$matches = [];
+				if (preg_match('/^<h1>\{([a-zA-Z_]+)\}<\/h1>$/', $sp, $matches)) {
+					$final[] = ['type' => $matches[1], 'html' => ''];
+					$curi = count($final) - 1;
+					$curj = 'html';
+				} elseif (preg_match('/^<p>([a-zA-Z_]+)\.(.*)<\/p>$/', $sp, $matches)) {
+					if ($curi == -1) {
+						$final[] = ['type' => 'html', 'html' => $sp];
+						$curi = count($final) - 1;
+						$curj = 'html';
+					} else {
+						$final[$curi][$matches[1]] = $matches[2];
+						$curj = $matches[1];
+					}
+				} else {
+					if ($curi == -1) {
+						$final[] = ['type' => 'html', 'html' => $sp];
+						$curi = count($final) - 1;
+						$curj = 'html';
+					} else {
+						$final[$curi][$curj] .= $sp;
+					}
+				}
+			}
+
+			$this->post_data['content'] = json_encode($final, JSON_UNESCAPED_UNICODE);
 		}
 	}
 	
@@ -201,19 +215,26 @@ EOD
 		if (isset($_POST['need_preview'])) {
 			ob_start();
 			if ($this->type == 'blog') {
-				echoUOJPageHeader('博客预览', array('ShowPageHeader' => false, 'REQUIRE_LIB' => array('mathjax' => '', 'hljs' => '')));
-				echo '<article>';
+				echoUOJPageHeader('博客预览', ['ShowPageHeader' => false, 'REQUIRE_LIB' => ['mathjax' => '', 'shjs' => '']]);
+				echo '<article class="uoj-article">';
 				echo $this->post_data['content'];
 				echo '</article>';
-				echoUOJPageFooter(array('ShowPageFooter' => false));
+				echoUOJPageFooter(['ShowPageFooter' => false]);
 			} elseif ($this->type == 'slide') {
 				uojIncludeView('slide', array_merge(
-					UOJContext::pageConfig(),
-					array(
+					UOJContext::pageConfig(), [
 						'PageTitle' => '幻灯片预览',
 						'content' => $this->post_data['content']
-					)
+					]
 				));
+			} elseif ($this->type == 'quiz') {
+				echoUOJPageHeader('博客预览', ['ShowPageHeader' => false, 'REQUIRE_LIB' => ['mathjax' => '', 'shjs' => '']]);
+				echo '<article class="uoj-article">';
+				$form = new UOJQuizSubmissionForm('quiz', json_decode($this->post_data['content'], true));
+				$form->no_submit = true;
+				$form->printHTML();
+				echo '</article>';
+				echoUOJPageFooter(['ShowPageFooter' => false]);
 			}
 			$ret['html'] = ob_get_contents();
 			ob_end_clean();

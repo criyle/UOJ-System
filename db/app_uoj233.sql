@@ -444,6 +444,17 @@ LOCK TABLES `judger_info` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `meta`
+--
+
+CREATE TABLE `meta` (
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` json NOT NULL,
+  `updated_at` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
 -- Table structure for table `problems`
 --
 

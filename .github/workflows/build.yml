@@ -34,6 +34,9 @@ jobs:
           - image_name: web
             context: .
             dockerfile: web/Dockerfile
+          - image_name: web-aux
+            context: web-aux
+            dockerfile: web-aux/Dockerfile
       fail-fast: false
 
     steps:

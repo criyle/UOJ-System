@@ -35,6 +35,14 @@ services:
       - SOCKET_PORT=2333
       - SOCKET_PASSWORD=_judger_socket_password_
 
+  uoj-web-aux:
+    image: ghcr.io/universaloj/uoj-web-aux:latest
+    build:
+      context: ./web-aux/
+      dockerfile: Dockerfile
+    container_name: uoj-web-aux
+    restart: always
+
   uoj-web:
     image: ghcr.io/universaloj/uoj-web:latest
     build:
@@ -49,6 +57,7 @@ services:
     depends_on:
       - uoj-db
       - uoj-judger
+      - uoj-web-aux
     volumes:
       - ./uoj_data/web/data:/var/uoj_data
       - ./uoj_data/web/storage:/opt/uoj/web/app/storage
