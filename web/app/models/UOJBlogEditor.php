@@ -1,7 +1,6 @@
 <?php
 
 class UOJBlogEditor {
-
 	/**
 	 * @var string blog, slide, or quiz
 	 */
@@ -119,7 +118,7 @@ class UOJBlogEditor {
 				die(json_encode(array('content_md' => '不合法的 YAML 格式')));
 			}
 			
-			$marked = function($md) use($purifier) {
+			$marked = function($md) use ($purifier) {
 				$html = UOJMarkdown::compile_from_markdown($md, ['type' => 'slide']);
 				if ($html === false) {
 					die(json_encode(array('content_md' => '未知错误')));
