@@ -41,6 +41,8 @@ UOJEOF
     a2enmod rewrite headers && sed -i -e '172s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
     #Create UOJ session save dir and make PHP extensions available
     mkdir --mode=733 /var/lib/php/uoj_sessions && chmod +t /var/lib/php/uoj_sessions
+    echo extension=yaml >/etc/php/7.4/mods-available/yaml.ini &&
+    ln -s /etc/php/7.4/mods-available/yaml.ini /etc/php/7.4/apache2/conf.d/20-yaml.ini
 	sed -i 's|;sys_temp_dir = "/tmp"|sys_temp_dir = "/tmp"|g' /etc/php/7.4/apache2/php.ini
 }
 
